@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cabs Premium</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+</head>
+
+<body>
+    <div class="app-container">
+        <!-- View 1: Login -->
+        <section id="login-view" class="view active">
+            <div class="view-content center-content">
+                <h1>Welcome</h1>
+                <p class="subtitle">Enter your mobile number to continue</p>
+                <div class="input-group">
+                    <span class="country-code">+91</span>
+                    <input type="tel" id="mobile-input" placeholder="Mobile Number" maxlength="10">
+                </div>
+                <button id="get-otp-btn" class="btn primary-btn" disabled>Get OTP</button>
+            </div>
+        </section>
+
+        <!-- View 2: OTP -->
+        <section id="otp-view" class="view hidden">
+            <div class="view-content center-content">
+                <h1>Verification</h1>
+                <p class="subtitle">Enter the code sent to <span id="display-mobile"></span></p>
+                <div class="otp-inputs">
+                    <input type="text" maxlength="4" id="otp-input" placeholder="1234" class="otp-field">
+                </div>
+                <!-- <p class="hint">Use <strong>1234</strong> as the OTP</p> -->
+                <button id="verify-otp-btn" class="btn primary-btn">Verify</button>
+                <button id="back-to-login" class="btn text-btn">Back</button>
+            </div>
+        </section>
+
+        <!-- View 3: Emergency Contact -->
+        <section id="emergency-view" class="view hidden">
+            <div class="view-content">
+                <h1>Emergency Contact</h1>
+                <p class="subtitle">Add a trusted contact for your safety.</p>
+
+                <div class="form-group">
+                    <label>Name</label>
+                    <input type="text" id="emergency-name" placeholder="Contact Name">
+                </div>
+                <div class="form-group">
+                    <label>Mobile Number</label>
+                    <input type="tel" id="emergency-number" placeholder="Contact Number" maxlength="10">
+                </div>
+
+                <button id="save-emergency-btn" class="btn primary-btn">Continue</button>
+            </div>
+        </section>
+
+        <!-- View 4: Dashboard -->
+        <section id="dashboard-view" class="view hidden">
+            <header class="dashboard-header">
+                <h2>Where to?</h2>
+                <div class="header-right">
+                    <button id="my-rides-btn" class="btn-icon">🕒</button>
+                    <div class="user-profile">
+                        <div class="avatar">U</div>
+                    </div>
+                </div>
+            </header>
+
+            <div id="map"></div>
+
+            <div class="bottom-sheet">
+                <div class="sheet-handle"></div>
+
+                <!-- Step 1: Input Destination -->
+                <div id="booking-step-input">
+                    <div class="location-sharing-card">
+                        <div class="ls-header">
+                            <div class="ls-info">
+                                <h3>Share Location</h3>
+                                <p>Share live location with emergency contact</p>
+                            </div>
+                            <label class="switch">
+                                <input type="checkbox" id="location-toggle">
+                                <span class="slider round"></span>
+                            </label>
+                        </div>
+                        <div id="active-sharing-status" class="status-badge hidden">
+                            <span class="dot"></span> Sharing Active
+                        </div>
+                    </div>
+
+                    <div class="ride-options">
+                        <div class="input-container">
+                            <input type="text" placeholder="Start Location (Pickup)"
+                                class="destination-input start-input">
+                            <input type="text" placeholder="Enter destination" class="destination-input dest-input">
+                        </div>
+                    </div>
+
+                    <button id="find-driver-btn" class="btn primary-btn full-width">Find Driver</button>
+                </div>
+
+                <!-- Step 2: Vehicle Selection -->
+                <div id="booking-step-vehicles" class="hidden">
+                    <header class="step-header">
+                        <button id="back-to-input" class="btn-icon">←</button>
+                        <h3>Choose a Ride</h3>
+                    </header>
+                    <div id="vehicle-list" class="vehicle-list">
+                        <!-- Vehicle items injected by JS -->
+                    </div>
+                    <button id="confirm-booking-btn" class="btn primary-btn full-width" disabled>Confirm
+                        Booking</button>
+                </div>
+
+                <!-- Step 3: Live Ride -->
+                <div id="booking-step-live" class="hidden">
+                    <div class="live-ride-header">
+                        <div class="driver-info">
+                            <div class="driver-avatar">
+                                <img src="https://ui-avatars.com/api/?name=Driver&background=random" alt="Driver">
+                            </div>
+                            <div class="driver-details">
+                                <h3 id="driver-name">Driver Name</h3>
+                                <p id="vehicle-details">Car Model • KA 01 AB 1234</p>
+                                <div class="rating">★ 4.8</div>
+                            </div>
+                        </div>
+                        <div class="otp-display">
+                            <span>OTP</span>
+                            <strong>4512</strong>
+                        </div>
+                    </div>
+
+                    <div class="live-actions">
+                        <div id="live-sharing-badge" class="status-badge full-width hidden"
+                            style="margin-bottom: 16px; justify-content: space-between;">
+                            <span><span class="dot"></span> Sharing Live Location</span>
+                            <button id="stop-sharing-live" class="text-link"
+                                style="color:var(--danger-color); font-size:12px; background:none; border:none; cursor:pointer;">STOP</button>
+                        </div>
+                        <button id="end-ride-btn" class="btn danger-btn full-width">Complete Ride</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- View 5: My Rides -->
+        <section id="rides-view" class="view hidden">
+            <header class="view-header">
+                <button id="back-to-dash" class="btn-icon">←</button>
+                <h2>My Rides</h2>
+            </header>
+            <div id="rides-list" class="rides-list-container">
+                <!-- Rides injected here -->
+                <p class="empty-state">No rides yet.</p>
+            </div>
+        </section>
+    </div>
+
+    <!-- Modals -->
+    <div id="location-modal" class="modal hidden">
+        <div class="modal-content">
+            <h3>Enable Location Sharing?</h3>
+            <p>Choose how you want to share your location with your emergency contact.</p>
+            <div class="modal-actions">
+                <button id="share-once-btn" class="btn secondary-btn">Only This Time</button>
+                <button id="share-always-btn" class="btn primary-btn">Share Everytime</button>
+            </div>
+            <button id="cancel-location-btn" class="btn text-btn close-modal">Cancel</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
