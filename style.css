@@ -104,6 +104,39 @@ h2 {
     font-weight: 600;
 }
 
+/* Branding */
+.brand-logo-large {
+    font-size: 48px;
+    font-weight: 800;
+    margin-bottom: 8px;
+    letter-spacing: -1px;
+    color: white;
+    /* Brighter white */
+    display: inline-block;
+    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+    /* Deep shadow behind text */
+}
+
+.brand-logo-small {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: white;
+    pointer-events: auto;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.brand-g {
+    /* Neon Glow Gradient Text */
+
+   
+    color:#75db22;
+  
+    font-size: 1.4em;
+ 
+    vertical-align: center;
+}
+
 .subtitle {
     color: var(--text-muted);
     font-size: 14px;
