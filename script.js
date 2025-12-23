@@ -313,20 +313,65 @@ function renderVehicles() {
         { id: 'auto', name: 'Auto', desc: 'No bargaining', price: 85, time: '4 min' },
         { id: 'mini', name: 'Mini', desc: 'Comfy hatchbacks', price: 120, time: '6 min' },
         { id: 'prime', name: 'Prime SUV', desc: 'Spacious 6-seater', price: 190, time: '8 min' },
+        { id: 'pay_later', name: 'Pay As You Go', desc: 'Low Price & Bidding', price: 'View', isCategory: true }
     ];
 
     vehicleList.innerHTML = vehicles.map(v => `
-        <div id="v-card-${v.id}" class="vehicle-card" onclick="selectVehicle('${v.id}', '${v.name}', ${v.price})">
+        <div id="v-card-${v.id}" class="vehicle-card" onclick="selectVehicle('${v.id}', '${v.name}', '${v.price}', ${v.isCategory || false})">
             <div class="v-info">
                 <h4>${v.name}</h4>
-                <p>ETA: ${v.time} • ${v.desc}</p>
+                <p>ETA: ${v.time || '--'} • ${v.desc}</p>
             </div>
-            <div class="v-price">₹${v.price}</div>
+            <div class="v-price">${typeof v.price === 'number' ? '₹' + v.price : v.price}</div>
         </div>
     `).join('');
 }
 
-window.selectVehicle = function (id, name, price) {
+// Sub-menu for Pay Later
+function renderPayLaterOptions() {
+    confirmBookingBtn.disabled = true;
+    confirmBookingBtn.innerText = 'Select Option';
+
+    // Update Header
+    document.querySelector('#booking-step-vehicles h3').innerText = 'Select Low Price Vehicle';
+
+    const subVehicles = [
+        { id: 'pl_auto', name: 'Auto', desc: 'Pay Cash/UPI', price: '₹70 - ₹90', type: 'auto' },
+        { id: 'pl_mini', name: 'Mini', desc: 'Pay Cash/UPI', price: '₹100 - ₹130', type: 'mini' },
+        { id: 'pl_suv', name: 'SUV', desc: 'Pay Cash/UPI', price: '₹160 - ₹200', type: 'prime' }
+    ];
+
+    // Add Back Button
+    let html = `
+        <div class="vehicle-card" onclick="renderVehicles(); document.querySelector('#booking-step-vehicles h3').innerText = 'Choose a Ride';" style="justify-content:center; border: 1px dashed var(--border-color);">
+            <div class="v-info" style="text-align:center;">
+                <h4 style="color:var(--accent-color);">← Back to Main List</h4>
+            </div>
+        </div>
+    `;
+
+    html += subVehicles.map(v => `
+        <div id="v-card-${v.id}" class="vehicle-card" onclick="selectVehicle('${v.id}', '${v.name}', '${v.price}', false, '${v.type}')">
+             <div class="v-info">
+                <h4>${v.name}</h4>
+                <p>${v.desc}</p>
+            </div>
+            <div class="v-price" style="font-size:16px;">${v.price}</div>
+        </div>
+    `).join('');
+
+    vehicleList.innerHTML = html;
+}
+
+window.selectVehicle = function (id, name, price, isCategory, realType) {
+    // 0. Handle Category Click
+    if (isCategory) {
+        if (id === 'pay_later') {
+            renderPayLaterOptions();
+        }
+        return;
+    }
+
     // 1. Remove selected class from all
     document.querySelectorAll('.vehicle-card').forEach(c => c.classList.remove('selected'));
 
@@ -335,9 +380,10 @@ window.selectVehicle = function (id, name, price) {
     if (card) card.classList.add('selected');
 
     // 3. Update State
-    currentRideData.vehicleId = id;
-    currentRideData.vehicle = name;
-    currentRideData.price = price;
+    // Use realType if provided (for sub-menu mapping), else default fallback id
+    currentRideData.vehicleId = realType || id;
+    currentRideData.vehicle = name; // e.g. "Auto"
+    currentRideData.price = price;  // e.g. "₹70 - ₹90" or 85
 
     // 4. Enable Confirm Button
     if (confirmBookingBtn) {
@@ -386,13 +432,25 @@ function startLiveRide() {
 // --- Step 4: End Ride ---
 if (endRideBtn) {
     endRideBtn.addEventListener('click', () => {
+        let finalPrice = currentRideData.price;
+
+        // If price is a range (e.g. "₹70 - ₹90"), pick a random value
+        if (typeof finalPrice === 'string' && finalPrice.includes('-')) {
+            const parts = finalPrice.split('-').map(p => parseInt(p.replace(/[^0-9]/g, '')));
+            if (parts.length === 2) {
+                const min = parts[0];
+                const max = parts[1];
+                finalPrice = Math.floor(Math.random() * (max - min + 1)) + min;
+            }
+        }
+
         const ride = {
             id: Date.now(),
             start: currentRideData.start,
             dest: currentRideData.dest,
             driver: currentRideData.driver.name,
             vehicle: currentRideData.vehicle,
-            price: currentRideData.price,
+            price: finalPrice, // Store the specific final price
             date: new Date().toLocaleString(),
             status: 'Completed'
         };
@@ -401,7 +459,7 @@ if (endRideBtn) {
         rides.unshift(ride);
         localStorage.setItem('cabs_rides', JSON.stringify(rides));
 
-        let msg = `Ride Completed! Paid ₹${currentRideData.price}.`;
+        let msg = `Ride Completed! Paid ₹${finalPrice}.`;
         alert(msg);
 
         // Reset UI
